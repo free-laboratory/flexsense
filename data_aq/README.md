@@ -1,4 +1,4 @@
-# Save COM Port Data to .mat for MATLAB
+# Save COM Port Data to .mat for MATLAB (main.py)
 
 ## Setup and Requirements
 This script reads **COM port data** from an **Arduino** and saves it as a `.mat` file for MATLAB processing.
