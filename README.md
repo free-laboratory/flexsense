@@ -33,9 +33,9 @@ This code is used to read data from **flex sensors** via two multiplexers and la
 
 
 
-## sensor_COM_Output.ino - Data Sequence Overview
+## sensor_COM_Output.ino
 directory: flexsense/sensor_COM_Output/sensor_COM_Output.ino
-### Multiplexer and Sensor Data Acquisition
+### Multiplexer and Sensor Data Acquisition - Data Sequence Overview
 
 #### Purpose
 This script reads **flex sensor data** from two multiplexers and outputs the readings in a **comma-separated format (CSV) over a COM port** for easy data acquisition and processing. The **IMU sensor integration is optional** and can be toggled on or off.
