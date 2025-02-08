@@ -1,1 +1,1 @@
-Outline of the project
+# Outline of the project
