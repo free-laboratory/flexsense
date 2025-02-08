@@ -31,5 +31,4 @@ This code is used to read data from **flex sensors** via two multiplexers and la
 - Uses `selectChannel(multiplexer, channel)` to cycle through sensor inputs.
 - Ensures **signal accuracy and correct sensor placement**.
 
-This script is essential for validating sensor connections before advanced processing.
 
