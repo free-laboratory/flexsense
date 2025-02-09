@@ -3,6 +3,7 @@
 
 ![Group 11](https://github.com/user-attachments/assets/4b479f9a-4187-46e0-b929-e390433f8c2d)
 
+# DATA AQUISITION FROM SENSORS
 ## sensor_arduino.ino
 directory: flexsense/sensor_arduino/sensor_arduino.ino
 ### Multiplexer and Sensor Data Acquisition
@@ -60,4 +61,5 @@ Each line of output follows this format:
 
 This ensures a **consistent, structured data stream** for analysis and real-time applications.
 
+# GROUND TRUTH DATA AQUISITION
 
