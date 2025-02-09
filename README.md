@@ -63,7 +63,7 @@ This ensures a **consistent, structured data stream** for analysis and real-time
 
 # 2. GROUND TRUTH DATA AQUISITION
 
-# 3. MODEL BASED SENSING
+# 3. MODEL BASED PROPRIOCEPTION
 
 # 4. MACHINE LEARNING
 
