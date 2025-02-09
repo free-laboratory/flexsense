@@ -1,7 +1,7 @@
 # flexsense
 ### Soft-Embeded Bend Sensor Design for Soft Robots
 
-![Group 10](https://github.com/user-attachments/assets/ac94b2d1-4139-417a-9797-de6d28e05a24)
+![Group 10](https://github.com/user-attachments/assets/143d3c50-364e-40d0-bab2-a2a274146a85)
 
 ## sensor_arduino.ino
 directory: flexsense/sensor_arduino/sensor_arduino.ino
