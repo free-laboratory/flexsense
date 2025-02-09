@@ -1,0 +1,21 @@
+% Load sensor data
+sensor = load('../data_aq/data_logs/com_data_20250208_160248.mat');
+gt = readmatrix('../data_gt/160248.xlsx');
+
+% Extract time and sensor data
+time_sensor = sensor.data(:, 1)/1000; % in s
+sensor_data = sensor.data(:, 2:end); 
+
+% Plot all sensor data
+figure();
+plot(time_sensor, sensor_data)
+xlabel('Time [s]')
+ylabel('Sensor Readings')
+title('Sensor Data Over Time')
+legend(arrayfun(@(x) sprintf('Sensor %d', x), 1:size(sensor_data, 2), 'UniformOutput', false))
+
+
+% Extract time and ground truth 
+time_gt = gt(6:end, 2);
+rb7 = gt(6:end, 3:5);
+rb6 = gt(6:end, )
