@@ -1,5 +1,5 @@
 # flexsense
-## Soft-Embeded Bend Sensor Design for Soft Robots
+### Soft-Embeded Bend Sensor Design for Soft Robots
 
 ![Group 10](https://github.com/user-attachments/assets/f85a2136-cef9-491e-863a-a08e9f7331d4)
 
