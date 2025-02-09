@@ -65,3 +65,8 @@ end
 legend(legend_entries, 'Location', 'best');
 axis("equal")
 hold off;
+
+% Save Cleaned Data
+clear colors gt i legend_entries sensor ans rb rb0 ...
+    rb1 rb2 rb3 rb4 rb5 rb6 rb7 
+save('cleaned_data.mat')
