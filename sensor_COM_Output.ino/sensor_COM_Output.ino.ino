@@ -1,7 +1,4 @@
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <array> // Include the array header
 
 // Define: Multiplexer 1
 const int sigPin1 = A0;
@@ -17,11 +14,10 @@ const int s1Pin2 = 48;
 const int s2Pin2 = 50;
 const int s3Pin2 = 52;
 
-// Define BNO055 IMU sensors (Commented out for now, can be enabled later)
-//#define USE_IMU
+// Define BNO055 IMU sensors (UART Mode)
+#define USE_IMU
 #ifdef USE_IMU
-Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
-Adafruit_BNO055 bno2 = Adafruit_BNO055(55, 0x29);
+#define IMU_BAUDRATE 115200
 #endif
 
 // Flex sensor data storage
@@ -31,7 +27,7 @@ int flexData1[13], flexData2[13];
 unsigned long lastTime = 0;
 
 void setup() {
-  Serial.begin(115200); // Use a higher baud rate for better performance
+  Serial.begin(115200);  // USB Serial (PC communication)
   Wire.begin();
 
   // Configure multiplexer pins as OUTPUT
@@ -45,10 +41,10 @@ void setup() {
   pinMode(s2Pin2, OUTPUT);
   pinMode(s3Pin2, OUTPUT);
 
-  // Initialize BNO IMUs if enabled
+  // Initialize BNO IMUs (UART mode)
   #ifdef USE_IMU
-  initializeIMU(bno1);
-  initializeIMU(bno2);
+  Serial1.begin(IMU_BAUDRATE);  // First IMU (TX1/RX1)
+  Serial2.begin(IMU_BAUDRATE);  // Second IMU (TX2/RX2)
   #endif
 
   lastTime = millis();
@@ -74,7 +70,7 @@ void loop() {
     flexData2[index++] = analogRead(sigPin2);
   }
 
-  // Print Data as CSV format
+  // Print data in CSV format
   Serial.print(currentTime);
   for (int i = 0; i < 13; i++) {
     Serial.print(","); Serial.print(flexData1[i]);
@@ -85,20 +81,17 @@ void loop() {
 
   // IMU data (only if enabled)
   #ifdef USE_IMU
-  std::array<float, 3> imu1_data = readYawData(bno1);
-  std::array<float, 3> imu2_data = readYawData(bno2);
-  Serial.print(","); Serial.print(imu1_data[0]);
-  Serial.print(","); Serial.print(imu1_data[1]);
-  Serial.print(","); Serial.print(imu1_data[2]);
-  Serial.print(","); Serial.print(imu2_data[0]);
-  Serial.print(","); Serial.print(imu2_data[1]);
-  Serial.print(","); Serial.print(imu2_data[2]);
+  String imu1_data = readIMUData(Serial1);
+  String imu2_data = readIMUData(Serial2);
+  Serial.print(","); Serial.print(imu1_data);
+  Serial.print(","); Serial.print(imu2_data);
   #endif
 
   Serial.println();  // End line for next reading
   delay(50);  // Stabilize sensor readings
 }
 
+// Function to select multiplexer channel
 void selectChannel(int multiplexer, int channel) {
   if (multiplexer == 1) {
     digitalWrite(s0Pin1, channel & 0x01);
@@ -114,17 +107,17 @@ void selectChannel(int multiplexer, int channel) {
 }
 
 #ifdef USE_IMU
-void initializeIMU(Adafruit_BNO055 &imu) {
-  if (!imu.begin()) {
-    Serial.println("IMU Initialization Failed!");
-    delay(5000);
-  }
-  imu.setExtCrystalUse(false);
-}
+// Function to read IMU data over UART
+String readIMUData(HardwareSerial &imuSerial) {
+  String imuData = "";
 
-std::array<float, 3> readYawData(Adafruit_BNO055 &imu) {
-  sensors_event_t event;
-  imu.getEvent(&event);
-  return {event.orientation.x, event.orientation.y, event.orientation.z};
+  // Read data from IMU if available
+  while (imuSerial.available()) {
+    char c = imuSerial.read();
+    if (c == '\n') break; // Stop reading at newline character
+    imuData += c;
+  }
+
+  return imuData;
 }
 #endif
