@@ -16,10 +16,11 @@ def read_com_data(port='COM3', baudrate=115200, duration=10):
     data_list = []
     start_time = datetime.datetime.now()
     print(f"Reading data from {port} for {duration} seconds...")
-    
+
+    # Updated expected lengths
     expected_length_no_imu = 27  # 1 timestamp + 26 flex sensor values
-    expected_length_with_imu = 33  # 1 timestamp + 26 flex sensor values + 6 IMU values
-    
+    expected_length_with_imu = 35  # 1 timestamp + 26 flex values + 8 quaternion values
+
     while (datetime.datetime.now() - start_time).seconds < duration:
         try:
             line = ser.readline().decode('utf-8').strip()
@@ -29,7 +30,7 @@ def read_com_data(port='COM3', baudrate=115200, duration=10):
                 # Standardize data row length
                 if len(values) == expected_length_no_imu:
                     # IMU data is missing, pad with NaN
-                    values.extend([np.nan] * 6)  
+                    values.extend([np.nan] * 8)  # Pad missing IMU quaternion values
                 elif len(values) != expected_length_with_imu:
                     print(f"Warning: Unexpected data length ({len(values)}) - Skipping row")
                     continue  # Skip invalid row
