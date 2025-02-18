@@ -81,10 +81,10 @@ void loop() {
 
   // IMU data (only if enabled)
   #ifdef USE_IMU
-  String imu1_data = readIMUData(Serial1);
-  String imu2_data = readIMUData(Serial2);
-  Serial.print(","); Serial.print(imu1_data);
-  Serial.print(","); Serial.print(imu2_data);
+  String imu1_quat = readIMUQuaternion(Serial1);
+  String imu2_quat = readIMUQuaternion(Serial2);
+  Serial.print(","); Serial.print(imu1_quat);
+  Serial.print(","); Serial.print(imu2_quat);
   #endif
 
   Serial.println();  // End line for next reading
@@ -107,17 +107,17 @@ void selectChannel(int multiplexer, int channel) {
 }
 
 #ifdef USE_IMU
-// Function to read IMU data over UART
-String readIMUData(HardwareSerial &imuSerial) {
-  String imuData = "";
-
-  // Read data from IMU if available
+// Function to read quaternion data from BNO055 over UART
+String readIMUQuaternion(HardwareSerial &imuSerial) {
+  String quaternionData = "";
+  
+  // Read quaternion data from IMU
   while (imuSerial.available()) {
     char c = imuSerial.read();
     if (c == '\n') break; // Stop reading at newline character
-    imuData += c;
+    quaternionData += c;
   }
 
-  return imuData;
+  return quaternionData; // Return quaternion as a string
 }
 #endif
