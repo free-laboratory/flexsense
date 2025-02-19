@@ -26,7 +26,7 @@ int flexData1[13], flexData2[13];
 // Note: imu2 uses the modified constructor that accepts a TwoWire pointer.
 #ifdef USE_IMU
   Adafruit_BNO055 imu1 = Adafruit_BNO055(55, 0x28);
-  Adafruit_BNO055 imu2 = Adafruit_BNO055(&Wire1, 56, 0x28);
+  Adafruit_BNO055 imu2 = Adafruit_BNO055(56, 0x28, &Wire1);
 #endif
 
 // Variable to record loop timing (optional)
