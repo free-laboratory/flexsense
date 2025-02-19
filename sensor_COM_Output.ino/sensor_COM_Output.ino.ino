@@ -2,6 +2,8 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
+#define USE_IMU  // Enable IMU functionality
+
 // --- Multiplexer 1 Definitions ---
 const int sigPin1 = A0;
 const int s0Pin1 = 22;
@@ -19,28 +21,25 @@ const int s3Pin2 = 52;
 // --- Flex sensor data storage arrays ---
 int flexData1[13], flexData2[13];
 
-// --- BNO055 IMU Definitions (I2C mode) ---
-// Both sensors use the same I2C address (0x28) because they are on independent I2C buses.
-// Sensor 1: Connected to default I2C bus (Wire)
-// Sensor 2: Connected to second I2C bus (Wire1)
-// Note: imu2 uses the modified constructor that accepts a TwoWire pointer.
 #ifdef USE_IMU
   Adafruit_BNO055 imu1 = Adafruit_BNO055(55, 0x28);
   Adafruit_BNO055 imu2 = Adafruit_BNO055(56, 0x28, &Wire1);
 #endif
 
-// Variable to record loop timing (optional)
-unsigned long lastTime = 0;
-
 void setup() {
-  Serial.begin(115200);   // USB Serial for PC output
+  Serial.begin(115200);
   
-  // Initialize default I2C bus
+  // Initialize I2C buses
   Wire.begin();
-  // Initialize second I2C bus on Arduino Due
   Wire1.begin();
+  
+  Serial.println("Scanning I2C devices on Wire...");
+  scanI2C(Wire);
 
-  // Configure multiplexer control pins as outputs
+  Serial.println("Scanning I2C devices on Wire1...");
+  scanI2C(Wire1);
+
+  // Configure multiplexer control pins
   pinMode(s0Pin1, OUTPUT);
   pinMode(s1Pin1, OUTPUT);
   pinMode(s2Pin1, OUTPUT);
@@ -51,24 +50,21 @@ void setup() {
   pinMode(s2Pin2, OUTPUT);
   pinMode(s3Pin2, OUTPUT);
 
-  // Initialize BNO055 IMUs (I2C mode)
-  #ifdef USE_IMU
-    // Sensor 1 on Wire
-    if (!imu1.begin()) {
-      Serial.println("Failed to initialize IMU 1 (Wire)!");
-      while (1);
-    }
-    imu1.setExtCrystalUse(true);
-    
-    // Sensor 2 on Wire1 (modified library constructor must be used)
-    if (!imu2.begin()) {
-      Serial.println("Failed to initialize IMU 2 (Wire1)!");
-      while (1);
-    }
-    imu2.setExtCrystalUse(true);
-  #endif
+  // Initialize IMUs
+  bool imu1_ready = imu1.begin();
+  bool imu2_ready = imu2.begin();
 
-  lastTime = millis();
+  if (!imu1_ready) Serial.println("IMU 1 initialization failed!");
+  else {
+    Serial.println("IMU 1 initialized successfully.");
+    imu1.setExtCrystalUse(true);
+  }
+
+  if (!imu2_ready) Serial.println("IMU 2 initialization failed!");
+  else {
+    Serial.println("IMU 2 initialized successfully.");
+    imu2.setExtCrystalUse(true);
+  }
 }
 
 void loop() {
@@ -77,46 +73,47 @@ void loop() {
   // --- Read Multiplexer 1 channels (0 to 12) ---
   for (int i = 0; i < 13; i++) {
     selectChannel(1, i);
+    delay(5); // Allow multiplexer stabilization
     flexData1[i] = analogRead(sigPin1);
   }
 
-  // --- Read Multiplexer 2 channels ---
+  // --- Read Multiplexer 2 channels (0 to 12) ---
   int index = 0;
   for (int i = 0; i < 8; i++) {
     selectChannel(2, i);
+    delay(5);
     flexData2[index++] = analogRead(sigPin2);
   }
   for (int i = 11; i < 16; i++) {
     selectChannel(2, i);
+    delay(5);
     flexData2[index++] = analogRead(sigPin2);
   }
 
   // --- Read IMU quaternion data ---
   String imu1_quat = "";
   String imu2_quat = "";
-#ifdef USE_IMU
-  imu::Quaternion q1 = imu1.getQuat();
-  imu::Quaternion q2 = imu2.getQuat();
-  imu1_quat = String(q1.w(), 4) + " " + String(q1.x(), 4) + " " + String(q1.y(), 4) + " " + String(q1.z(), 4);
-  imu2_quat = String(q2.w(), 4) + " " + String(q2.x(), 4) + " " + String(q2.y(), 4) + " " + String(q2.z(), 4);
-#endif
+  #ifdef USE_IMU
+    imu::Quaternion q1 = imu1.getQuat();
+    imu::Quaternion q2 = imu2.getQuat();
+    imu1_quat = String(q1.w(), 4) + " " + String(q1.x(), 4) + " " + String(q1.y(), 4) + " " + String(q1.z(), 4);
+    imu2_quat = String(q2.w(), 4) + " " + String(q2.x(), 4) + " " + String(q2.y(), 4) + " " + String(q2.z(), 4);
+  #endif
 
-  // --- Print CSV Data ---  
-  // Format:
-  // timestamp, flexData1[0] ... flexData1[12],
-  // flexData2[0] ... flexData2[12],
-  // IMU1_quaternion, IMU2_quaternion
+  // --- Print CSV Data ---
   Serial.print(currentTime);
   for (int i = 0; i < 13; i++) {
-    Serial.print(","); 
+    Serial.print(",");
     Serial.print(flexData1[i]);
   }
   for (int i = 0; i < 13; i++) {
-    Serial.print(","); 
+    Serial.print(",");
     Serial.print(flexData2[i]);
   }
-  Serial.print(","); Serial.print(imu1_quat);
-  Serial.print(","); Serial.print(imu2_quat);
+  Serial.print(",");
+  Serial.print(imu1_quat);
+  Serial.print(",");
+  Serial.print(imu2_quat);
   Serial.println();
 
   delay(50);
@@ -137,3 +134,13 @@ void selectChannel(int multiplexer, int channel) {
   }
 }
 
+// --- Function to scan I2C devices ---
+void scanI2C(TwoWire &wire) {
+  for (byte address = 1; address < 127; address++) {
+    wire.beginTransmission(address);
+    if (wire.endTransmission() == 0) {
+      Serial.print("Found device at 0x");
+      Serial.println(address, HEX);
+    }
+  }
+}
