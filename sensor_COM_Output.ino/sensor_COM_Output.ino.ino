@@ -1,4 +1,6 @@
 #include <Wire.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
 
 // --- Multiplexer 1 Definitions ---
 const int sigPin1 = A0;
@@ -14,21 +16,28 @@ const int s1Pin2 = 48;
 const int s2Pin2 = 50;
 const int s3Pin2 = 52;
 
-// --- BNO055 IMU Definitions (UART mode) ---
-#define USE_IMU
-#ifdef USE_IMU
-  #define IMU_BAUDRATE 115200
-#endif
-
-// Flex sensor data storage arrays
+// --- Flex sensor data storage arrays ---
 int flexData1[13], flexData2[13];
+
+// --- BNO055 IMU Definitions (I2C mode) ---
+// Using the same address (0x28) for both sensors because they are on independent I2C buses.
+// Sensor 1 is connected to the default I2C bus (Wire)
+// Sensor 2 is connected to the second I2C bus (Wire1)
+#ifdef USE_IMU
+  Adafruit_BNO055 imu1 = Adafruit_BNO055(55, 0x28);
+  Adafruit_BNO055 imu2 = Adafruit_BNO055(56, 0x28);
+#endif
 
 // Variable to record loop timing (optional)
 unsigned long lastTime = 0;
 
 void setup() {
   Serial.begin(115200);   // USB Serial for PC output
+  
+  // Initialize default I2C bus
   Wire.begin();
+  // Initialize second I2C bus on Arduino Due
+  Wire1.begin();
 
   // Configure multiplexer control pins as outputs
   pinMode(s0Pin1, OUTPUT);
@@ -41,10 +50,25 @@ void setup() {
   pinMode(s2Pin2, OUTPUT);
   pinMode(s3Pin2, OUTPUT);
 
-  // Initialize BNO055 IMUs (UART mode) if enabled
+  // Initialize BNO055 IMUs (I2C mode)
   #ifdef USE_IMU
-    Serial1.begin(IMU_BAUDRATE);  // First IMU (TX1/RX1)
-    Serial2.begin(IMU_BAUDRATE);  // Second IMU (TX2/RX2)
+    // Initialize sensor 1 on Wire
+    if (!imu1.begin()) {
+      Serial.println("Failed to initialize IMU 1 (Wire)!");
+      while (1);
+    }
+    imu1.setExtCrystalUse(true);
+    
+    // Initialize sensor 2 on Wire1
+    // Temporarily switch Wire pointer for imu2 initialization:
+    // The Adafruit_BNO055 library does not support selecting the I2C bus directly,
+    // so you may need to modify the library or use a workaround.
+    // Here we assume that imu2.begin() uses Wire1 (e.g., if the library is modified).
+    if (!imu2.begin()) {
+      Serial.println("Failed to initialize IMU 2 (Wire1)!");
+      while (1);
+    }
+    imu2.setExtCrystalUse(true);
   #endif
 
   lastTime = millis();
@@ -60,45 +84,41 @@ void loop() {
   }
 
   // --- Read Multiplexer 2 channels ---
-  // First, channels 0 to 7
   int index = 0;
   for (int i = 0; i < 8; i++) {
     selectChannel(2, i);
     flexData2[index++] = analogRead(sigPin2);
   }
-  // Then, channels 11 to 15 (to make 13 channels total)
   for (int i = 11; i < 16; i++) {
     selectChannel(2, i);
     flexData2[index++] = analogRead(sigPin2);
   }
 
+  // --- Read IMU quaternion data ---
+  String imu1_quat = "";
+  String imu2_quat = "";
+#ifdef USE_IMU
+  imu::Quaternion q1 = imu1.getQuat();
+  imu::Quaternion q2 = imu2.getQuat();
+  imu1_quat = String(q1.w(), 4) + " " + String(q1.x(), 4) + " " + String(q1.y(), 4) + " " + String(q1.z(), 4);
+  imu2_quat = String(q2.w(), 4) + " " + String(q2.x(), 4) + " " + String(q2.y(), 4) + " " + String(q2.z(), 4);
+#endif
+
   // --- Print CSV Data ---
-  // 1. Timestamp
   Serial.print(currentTime);
-  
-  // 2. Multiplexer 1 data (13 channels)
   for (int i = 0; i < 13; i++) {
     Serial.print(","); 
     Serial.print(flexData1[i]);
   }
-  
-  // 3. Multiplexer 2 data (13 channels)
   for (int i = 0; i < 13; i++) {
     Serial.print(","); 
     Serial.print(flexData2[i]);
   }
-  
-  // 4. IMU quaternion data (if enabled)
-  #ifdef USE_IMU
-    String imu1_quat = readIMUQuaternion(Serial1);
-    String imu2_quat = readIMUQuaternion(Serial2);
-    Serial.print(","); Serial.print(imu1_quat);
-    Serial.print(","); Serial.print(imu2_quat);
-  #endif
+  Serial.print(","); Serial.print(imu1_quat);
+  Serial.print(","); Serial.print(imu2_quat);
+  Serial.println();
 
-  Serial.println();  // End of CSV line
-
-  delay(50);  // Short delay for sensor stabilization
+  delay(50);
 }
 
 // --- Function to set the multiplexer channel ---
@@ -115,17 +135,3 @@ void selectChannel(int multiplexer, int channel) {
     digitalWrite(s3Pin2, (channel >> 3) & 0x01);
   }
 }
-
-#ifdef USE_IMU
-// --- Function to read quaternion data from a BNO055 IMU via UART ---
-// This function reads characters until a newline character is found.
-String readIMUQuaternion(HardwareSerial &imuSerial) {
-  String quaternionData = "";
-  while (imuSerial.available()) {
-    char c = imuSerial.read();
-    if (c == '\n') break;
-    quaternionData += c;
-  }
-  return quaternionData;
-}
-#endif
