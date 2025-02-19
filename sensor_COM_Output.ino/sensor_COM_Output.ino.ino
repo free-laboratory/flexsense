@@ -1,50 +1,50 @@
 #include <Wire.h>
 
-// Define: Multiplexer 1
+// --- Multiplexer 1 Definitions ---
 const int sigPin1 = A0;
 const int s0Pin1 = 22;
 const int s1Pin1 = 24;
 const int s2Pin1 = 26;
 const int s3Pin1 = 28;
 
-// Define: Multiplexer 2
+// --- Multiplexer 2 Definitions ---
 const int sigPin2 = A1;
 const int s0Pin2 = 46;
 const int s1Pin2 = 48;
 const int s2Pin2 = 50;
 const int s3Pin2 = 52;
 
-// Define BNO055 IMU sensors (UART Mode)
+// --- BNO055 IMU Definitions (UART mode) ---
 #define USE_IMU
 #ifdef USE_IMU
-#define IMU_BAUDRATE 115200
+  #define IMU_BAUDRATE 115200
 #endif
 
-// Flex sensor data storage
+// Flex sensor data storage arrays
 int flexData1[13], flexData2[13];
 
-// Variables to measure loop speed
+// Variable to record loop timing (optional)
 unsigned long lastTime = 0;
 
 void setup() {
-  Serial.begin(115200);  // USB Serial (PC communication)
+  Serial.begin(115200);   // USB Serial for PC output
   Wire.begin();
 
-  // Configure multiplexer pins as OUTPUT
+  // Configure multiplexer control pins as outputs
   pinMode(s0Pin1, OUTPUT);
   pinMode(s1Pin1, OUTPUT);
   pinMode(s2Pin1, OUTPUT);
   pinMode(s3Pin1, OUTPUT);
-
+  
   pinMode(s0Pin2, OUTPUT);
   pinMode(s1Pin2, OUTPUT);
   pinMode(s2Pin2, OUTPUT);
   pinMode(s3Pin2, OUTPUT);
 
-  // Initialize BNO IMUs (UART mode)
+  // Initialize BNO055 IMUs (UART mode) if enabled
   #ifdef USE_IMU
-  Serial1.begin(IMU_BAUDRATE);  // First IMU (TX1/RX1)
-  Serial2.begin(IMU_BAUDRATE);  // Second IMU (TX2/RX2)
+    Serial1.begin(IMU_BAUDRATE);  // First IMU (TX1/RX1)
+    Serial2.begin(IMU_BAUDRATE);  // Second IMU (TX2/RX2)
   #endif
 
   lastTime = millis();
@@ -53,45 +53,55 @@ void setup() {
 void loop() {
   unsigned long currentTime = millis();
 
-  // Read multiplexer 1 data (CH0 - CH12 sequentially)
+  // --- Read Multiplexer 1 channels (0 to 12) ---
   for (int i = 0; i < 13; i++) {
     selectChannel(1, i);
     flexData1[i] = analogRead(sigPin1);
   }
 
-  // Read multiplexer 2 data (CH0-CH7 and CH11-CH15)
+  // --- Read Multiplexer 2 channels ---
+  // First, channels 0 to 7
   int index = 0;
-  for (int i = 0; i < 8; i++) { // Read CH0-CH7
+  for (int i = 0; i < 8; i++) {
     selectChannel(2, i);
     flexData2[index++] = analogRead(sigPin2);
   }
-  for (int i = 11; i < 16; i++) { // Read CH11-CH15
+  // Then, channels 11 to 15 (to make 13 channels total)
+  for (int i = 11; i < 16; i++) {
     selectChannel(2, i);
     flexData2[index++] = analogRead(sigPin2);
   }
 
-  // Print data in CSV format
+  // --- Print CSV Data ---
+  // 1. Timestamp
   Serial.print(currentTime);
+  
+  // 2. Multiplexer 1 data (13 channels)
   for (int i = 0; i < 13; i++) {
-    Serial.print(","); Serial.print(flexData1[i]);
+    Serial.print(","); 
+    Serial.print(flexData1[i]);
   }
+  
+  // 3. Multiplexer 2 data (13 channels)
   for (int i = 0; i < 13; i++) {
-    Serial.print(","); Serial.print(flexData2[i]);
+    Serial.print(","); 
+    Serial.print(flexData2[i]);
   }
-
-  // IMU data (only if enabled)
+  
+  // 4. IMU quaternion data (if enabled)
   #ifdef USE_IMU
-  String imu1_quat = readIMUQuaternion(Serial1);
-  String imu2_quat = readIMUQuaternion(Serial2);
-  Serial.print(","); Serial.print(imu1_quat);
-  Serial.print(","); Serial.print(imu2_quat);
+    String imu1_quat = readIMUQuaternion(Serial1);
+    String imu2_quat = readIMUQuaternion(Serial2);
+    Serial.print(","); Serial.print(imu1_quat);
+    Serial.print(","); Serial.print(imu2_quat);
   #endif
 
-  Serial.println();  // End line for next reading
-  delay(50);  // Stabilize sensor readings
+  Serial.println();  // End of CSV line
+
+  delay(50);  // Short delay for sensor stabilization
 }
 
-// Function to select multiplexer channel
+// --- Function to set the multiplexer channel ---
 void selectChannel(int multiplexer, int channel) {
   if (multiplexer == 1) {
     digitalWrite(s0Pin1, channel & 0x01);
@@ -107,17 +117,15 @@ void selectChannel(int multiplexer, int channel) {
 }
 
 #ifdef USE_IMU
-// Function to read quaternion data from BNO055 over UART
+// --- Function to read quaternion data from a BNO055 IMU via UART ---
+// This function reads characters until a newline character is found.
 String readIMUQuaternion(HardwareSerial &imuSerial) {
   String quaternionData = "";
-  
-  // Read quaternion data from IMU
   while (imuSerial.available()) {
     char c = imuSerial.read();
-    if (c == '\n') break; // Stop reading at newline character
+    if (c == '\n') break;
     quaternionData += c;
   }
-
-  return quaternionData; // Return quaternion as a string
+  return quaternionData;
 }
 #endif
