@@ -20,12 +20,13 @@ const int s3Pin2 = 52;
 int flexData1[13], flexData2[13];
 
 // --- BNO055 IMU Definitions (I2C mode) ---
-// Using the same address (0x28) for both sensors because they are on independent I2C buses.
-// Sensor 1 is connected to the default I2C bus (Wire)
-// Sensor 2 is connected to the second I2C bus (Wire1)
+// Both sensors use the same I2C address (0x28) because they are on independent I2C buses.
+// Sensor 1: Connected to default I2C bus (Wire)
+// Sensor 2: Connected to second I2C bus (Wire1)
+// Note: imu2 uses the modified constructor that accepts a TwoWire pointer.
 #ifdef USE_IMU
   Adafruit_BNO055 imu1 = Adafruit_BNO055(55, 0x28);
-  Adafruit_BNO055 imu2 = Adafruit_BNO055(56, 0x28);
+  Adafruit_BNO055 imu2 = Adafruit_BNO055(&Wire1, 56, 0x28);
 #endif
 
 // Variable to record loop timing (optional)
@@ -52,18 +53,14 @@ void setup() {
 
   // Initialize BNO055 IMUs (I2C mode)
   #ifdef USE_IMU
-    // Initialize sensor 1 on Wire
+    // Sensor 1 on Wire
     if (!imu1.begin()) {
       Serial.println("Failed to initialize IMU 1 (Wire)!");
       while (1);
     }
     imu1.setExtCrystalUse(true);
     
-    // Initialize sensor 2 on Wire1
-    // Temporarily switch Wire pointer for imu2 initialization:
-    // The Adafruit_BNO055 library does not support selecting the I2C bus directly,
-    // so you may need to modify the library or use a workaround.
-    // Here we assume that imu2.begin() uses Wire1 (e.g., if the library is modified).
+    // Sensor 2 on Wire1 (modified library constructor must be used)
     if (!imu2.begin()) {
       Serial.println("Failed to initialize IMU 2 (Wire1)!");
       while (1);
@@ -104,7 +101,11 @@ void loop() {
   imu2_quat = String(q2.w(), 4) + " " + String(q2.x(), 4) + " " + String(q2.y(), 4) + " " + String(q2.z(), 4);
 #endif
 
-  // --- Print CSV Data ---
+  // --- Print CSV Data ---  
+  // Format:
+  // timestamp, flexData1[0] ... flexData1[12],
+  // flexData2[0] ... flexData2[12],
+  // IMU1_quaternion, IMU2_quaternion
   Serial.print(currentTime);
   for (int i = 0; i < 13; i++) {
     Serial.print(","); 
@@ -135,3 +136,4 @@ void selectChannel(int multiplexer, int channel) {
     digitalWrite(s3Pin2, (channel >> 3) & 0x01);
   }
 }
+
