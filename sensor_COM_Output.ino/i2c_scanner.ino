@@ -3,7 +3,7 @@
 #include <utility/imumaths.h>
 
 Adafruit_BNO055 imu1 = Adafruit_BNO055(55, 0x28);
-Adafruit_BNO055 imu2 = Adafruit_BNO055(&Wire1, 56, 0x28);
+Adafruit_BNO055 imu2 = Adafruit_BNO055(56, 0x28, &Wire1);
 
 void setup() {
   Serial.begin(115200);
@@ -12,10 +12,10 @@ void setup() {
   
   Serial.println("Scanning I2C devices on Wire (default I2C bus)...");
   scanI2C(Wire);
-
+  delay(10);
   Serial.println("Scanning I2C devices on Wire1 (second I2C bus)...");
   scanI2C(Wire1);
-
+  delay(10);
   if (!imu1.begin()) {
     Serial.println("IMU 1 (Wire) initialization failed!");
   } else {
@@ -45,7 +45,7 @@ void loop() {
   Serial.print(q2.x(), 4); Serial.print(" "); Serial.print(q2.y(), 4);
   Serial.print(" "); Serial.println(q2.z(), 4);
 
-  delay(500);
+  delay(50);
 }
 
 void scanI2C(TwoWire &wire) {
