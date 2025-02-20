@@ -33,10 +33,10 @@ void setup() {
   Wire.begin();
   Wire1.begin();
   
-  Serial.println("Scanning I2C devices on Wire...");
+  //Serial.println("Scanning I2C devices on Wire...");
   scanI2C(Wire);
 
-  Serial.println("Scanning I2C devices on Wire1...");
+  //Serial.println("Scanning I2C devices on Wire1...");
   scanI2C(Wire1);
 
   // Configure multiplexer control pins
@@ -54,17 +54,7 @@ void setup() {
   bool imu1_ready = imu1.begin();
   bool imu2_ready = imu2.begin();
 
-  if (!imu1_ready) Serial.println("IMU 1 initialization failed!");
-  else {
-    Serial.println("IMU 1 initialized successfully.");
-    imu1.setExtCrystalUse(true);
-  }
 
-  if (!imu2_ready) Serial.println("IMU 2 initialization failed!");
-  else {
-    Serial.println("IMU 2 initialized successfully.");
-    imu2.setExtCrystalUse(true);
-  }
 }
 
 void loop() {
@@ -116,7 +106,7 @@ void loop() {
   Serial.print(imu2_quat);
   Serial.println();
 
-  delay(50);
+  delay(25);
 }
 
 // --- Function to set the multiplexer channel ---
@@ -139,8 +129,8 @@ void scanI2C(TwoWire &wire) {
   for (byte address = 1; address < 127; address++) {
     wire.beginTransmission(address);
     if (wire.endTransmission() == 0) {
-      Serial.print("Found device at 0x");
-      Serial.println(address, HEX);
+      //Serial.print("Found device at 0x");
+      //Serial.println(address, HEX);
     }
   }
 }
