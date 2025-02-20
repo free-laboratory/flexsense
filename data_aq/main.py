@@ -9,7 +9,7 @@ def create_filename():
     now = datetime.datetime.now()
     return f"data_logs/com_data_{now.strftime('%Y%m%d_%H%M%S')}.mat"
 
-def read_com_data(port='COM3', baudrate=115200, duration=10):
+def read_com_data(port='COM3', baudrate=115200, duration=100):
     """Read data from the COM port and save as a .mat file."""
     ser = serial.Serial(port, baudrate, timeout=1)
     
@@ -19,17 +19,20 @@ def read_com_data(port='COM3', baudrate=115200, duration=10):
 
     # Expected data lengths
     expected_length_no_imu = 27  # 1 timestamp + 26 flex sensor values
-    expected_length_with_imu = 35  # 1 timestamp + 26 flex values + 4 quaternion values per IMU (8 total)
+    expected_length_with_imu = 35  # 1 timestamp + 26 flex values + 8 quaternion values (2 IMUs * 4)
 
     while (datetime.datetime.now() - start_time).seconds < duration:
         try:
             line = ser.readline().decode('utf-8').strip()
+
             if line:
+                # Step 1: Ensure commas properly separate the quaternion values
+                line = line.replace(" ", ",")  # Convert all spaces to commas
+                
                 values = list(map(float, line.split(',')))
 
-                # Standardize data row length
+                # Step 2: Standardize data row length
                 if len(values) == expected_length_no_imu:
-                    # IMU data is missing, pad with NaN (since quaternions should always be 4 values per IMU)
                     values.extend([np.nan] * 8)  # Pad missing IMU quaternion values
                 elif len(values) != expected_length_with_imu:
                     print(f"Warning: Unexpected data length ({len(values)}) - Skipping row")
