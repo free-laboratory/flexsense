@@ -1,22 +1,24 @@
-clear, clc
+clear, clc, close all 
 
 %% Data Cleaning
 % Load sensor data
-sensor = load('../data_aq/data_logs/com_data_20250208_160248.mat');
-gt = readmatrix('../data_gt/160248.xlsx');
+sensor = load('../data_aq/data_logs/com_data_20250219_205936.mat');
+gt = readmatrix('../data_gt/205936.xlsx');
 
 % Extract time and sensor data
 time_sensor = sensor.data(:, 1)/1000; % in s
 sensor_data = sensor.data(:, 2:end); 
-sensor_data = sensor_data(:,1:26); % delete NaN columns 
+sensor_data = sensor_data(:,1:26); % delete NaN columns
+imu_data = sensor.data(:,28:35);
+
 
 % Extract time and ground truth 
-timeDiff = 3.423;
+timeDiff = 0;
 time_gt = gt(6:end, 2) - timeDiff;
 
-rb7 = gt(6:end, 3:5); rb6 = gt(6:end, 15:17); rb5 = gt(6:end, 27:29);
-rb4 = gt(6:end, 39:41); rb3 = gt(6:end, 51:53); rb2 = gt(6:end, 63:65);
-rb1 = gt(6:end, 78:80); rb0 = gt(6:end, 90:92);
+rb7 = gt(6:end, 7:9); rb6 = gt(6:end, 23:25); rb5 = gt(6:end, 39:41);
+rb4 = gt(6:end, 55:57); rb3 = gt(6:end, 71:73); rb2 = gt(6:end, 87:89);
+rb1 = gt(6:end, 106:108); rb0 = gt(6:end, 125:127);
 
 % "Swap" the second and third columns for correct (x, y, z) order
 rb0 = rb0(:, [1, 3, 2]); rb1 = rb1(:, [1, 3, 2]); rb2 = rb2(:, [1, 3, 2]);
@@ -36,9 +38,9 @@ time = time_sensor;
 
 % Save Cleaned Data
 clear colors gt i legend_entries sensor ans
-save('cleaned_data.mat', 'time', 'rb0_interp', 'rb1_interp', 'rb2_interp', ...
+save('cleaned_data_205936.mat', 'time', 'rb0_interp', 'rb1_interp', 'rb2_interp', ...
     'rb3_interp', 'rb4_interp', 'rb5_interp', 'rb6_interp', 'rb7_interp',...
-    'sensor_data')
+    'sensor_data', 'imu_data')
 
 %% PLOT
 % Plot all sensor data
@@ -83,6 +85,6 @@ hold off;
 figure(3)
 hold on
 title('interp1 check');
-plot(time, -sensor_data(:,1)-250)
-plot(time, rb7_interp(:,1))
+plot(time, (sensor_data(:,1)-mean(sensor_data(:,1)))/1000)
+plot(time, rb0_interp(:,1)-mean(rb0_interp(:,1)))
 legend('sensor', 'gt')
